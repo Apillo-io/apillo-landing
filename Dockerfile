@@ -3,7 +3,6 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy only package files first (better caching)
 COPY package*.json ./
 RUN npm ci
 
@@ -25,12 +24,10 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Copy standalone server
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 
-# Copy static files (may not exist if not built yet, ignore error)
+# Copy static files
 RUN mkdir -p .next && \
-    cp -r /app/.next/static ./.next/ 2>/dev/null || true
-
-# Copy public dir if exists
-RUN cp -r /app/public ./public 2>/dev/null || true
+    cp -r /app/.next/static ./.next/ 2>/dev/null || true && \
+    cp -r /app/public ./public 2>/dev/null || true
 
 USER nextjs
 
