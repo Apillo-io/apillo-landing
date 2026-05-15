@@ -1,0 +1,38 @@
+services:
+  apillo-landing:
+    build: .
+    container_name: apillo-landing
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - TAILSCALE_AUTH_KEY=${TAILSCALE_AUTH_KEY}
+    networks:
+      - ApilloNet
+    restart: unless-stopped
+    depends_on:
+      - tailscale
+
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: apillo-landing-tailscale
+    environment:
+      - TS_AUTH_KEY=${TAILSCALE_AUTH_KEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--advertise-exit-node
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    network_mode: host
+    privileged: true
+    restart: unless-stopped
+    command: ["sh", "-c", "tailscaled & sleep 3 && tailscale up --accept-routes --advertise-exit-node --hostname apillo-landing && tail -f /dev/null"]
+
+networks:
+  ApilloNet:
+    driver: bridge
+
+volumes:
+  tailscale-state:
